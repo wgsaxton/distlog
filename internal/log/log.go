@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -134,7 +133,7 @@ func (l *Log) LowestOffset() (uint64, error) {
 func (l *Log) HighestOffset() (uint64, error) {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	off := l.segments[len(l.segments) - 1].nextOffset
+	off := l.segments[len(l.segments)-1].nextOffset
 	if off == 0 {
 		return 0, nil
 	}
@@ -146,7 +145,7 @@ func (l *Log) Truncate(lowest uint64) error {
 	defer l.mu.Unlock()
 	var segments []*segment
 	for _, s := range l.segments {
-		if s.nextOffset <= lowest + 1 {
+		if s.nextOffset <= lowest+1 {
 			if err := s.Remove(); err != nil {
 				return err
 			}
