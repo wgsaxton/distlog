@@ -6,6 +6,7 @@ import (
 	"net"
 	"sync"
 
+	api "github.com/wgsaxton/distlog/api/v1"
 	"github.com/wgsaxton/distlog/internal/auth"
 	"github.com/wgsaxton/distlog/internal/discovery"
 	"github.com/wgsaxton/distlog/internal/log"
@@ -137,5 +138,43 @@ func (a *Agent) setupMembership() error {
 		return err
 	}
 	client := api.NewLogClient(conn)
+	a.replicator = &log.Replicator{
+		DialOpions:  opts,
+		LocalServer: client,
+	}
+	a.membership, err = discovery.New(a.replicator, discovery.Config{
+		NodeName: a.Config.NodeName,
+		BindAddr: a.Config.BindAddr,
+		Tags: map[string]string{
+			"rpc_addr": rpcAddr,
+		},
+		StartJoinAddrs: a.Config.StartJoinAddrs,
+	})
+	return err
+}
 
+func (a *Agent) Shutdown() error {
+	a.shutdownLock.Lock()
+	defer a.shutdownLock.Unlock()
+	if a.shutdown {
+		return nil
+	}
+	a.shutdown = true
+	close(a.shutdowns)
+
+	shutdown := []func() error{
+		a.membership.Leave,
+		a.replicator.Close,
+		func() error {
+			a.server.GracefulStop()
+			return nil
+		},
+		a.log.Close,
+	}
+	for _, fn := range shutdown {
+		if err := fn(); err != nil {
+			return nil
+		}
+	}
+	return nil
 }
