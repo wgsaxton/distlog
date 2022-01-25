@@ -49,3 +49,10 @@ compile:
 		--go-grpc_opt=paths=source_relative \
 		--proto_path=.
 
+# START: build_docker
+TAG ?= 0.0.1
+
+build-docker:
+	docker build -t github.com/wgsaxton/distlog:$(TAG) .
+
+# END: build_docker
