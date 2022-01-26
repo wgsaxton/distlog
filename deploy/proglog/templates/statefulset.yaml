@@ -6,15 +6,14 @@ metadata:
   labels: {{ include "proglog.labels" . | nindent 4 }}
 spec:
   selector:
-    marchLabels: {{ include "proglog.selectorLabels" . | nindent 6 }}
+    matchLabels: {{ include "proglog.selectorLabels" . | nindent 6 }}
   serviceName: {{ include "proglog.fullname" . }}
   replicas: {{ .Values.replicas }}
   template:
     metadata:
       name: {{ include "proglog.fullname" . }}
-      labels: {{ include "proglog.labels" . | indent 8 }}
+      labels: {{ include "proglog.labels" . | nindent 8 }}
     spec:
-      # initContainers...
       initContainers:
       - name: {{ include "proglog.fullname" . }}-config-init
         image: busybox
@@ -30,18 +29,13 @@ spec:
             # Make sure the following three key-values are on one line each in
             # you code. I split them across multiple lines to fit them in
             # the book.
-            bind-addr: \
-              "$HOSTNAME.proglog.{{.Release.Namespace}}.\svc.cluster.local:\
-                {{.Values.serfPort}}"
+            bind-addr: "$HOSTNAME.proglog.{{.Release.Namespace}}.\svc.cluster.local:{{.Values.serfPort}}"
             bootstrap: $([ $ID = 0 ] && echo true || echo false)
-            $([ $ID !=0 ] && echo 'start-join-addrs: \
-              "proglog-0.proglog.{{.Release.Namespace}}.svc.cluster.local:\
-                {{.Values.serfPort}}"')
+            $([ $ID !=0 ] && echo 'start-join-addrs: "proglog-0.proglog.{{.Release.Namespace}}.svc.cluster.local:{{.Values.serfPort}}"')
             EOD
         volumeMounts:
         - name: datadir
           mountPath: /var/run/proglog
-      # containers...
       containers:
       - name: {{ include "proglog.fullname" . }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -52,7 +46,6 @@ spec:
           name: serf
         args:
           - --config-file=/var/run/proglog/config.yaml
-        # probes ...
         readinessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:{{ .Values.rpcPort }}"]
