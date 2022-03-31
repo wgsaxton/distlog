@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -14,12 +15,16 @@ func TestLog(t *testing.T) {
 	for scenario, fn := range map[string]func(
 		t *testing.T, log *Log,
 	){
+		// These are the key/values of the map above
+		// that the for loop iterates over
 		"append and read a record of succeeds": testAppendRead,
 		"offset out of range error":            testOutOfRangeErr,
 		"init with existing segments":          testInitExisting,
 		"reader":                               testReader,
 		"truncate":                             testTruncate,
 	} {
+		// This is the start of the for loop.
+		// Lots of anonymous map then function below (within the t.Run method)
 		t.Run(scenario, func(t *testing.T) {
 			dir, err := ioutil.TempDir("", "store-test")
 			require.NoError(t, err)
@@ -27,6 +32,7 @@ func TestLog(t *testing.T) {
 			c := Config{}
 			c.Segment.MaxStoreBytes = 32
 			log, err := NewLog(dir, c)
+			// fmt.Println("done creating log")
 			require.NoError(t, err)
 			fn(t, log)
 		})
@@ -50,6 +56,7 @@ func testOutOfRangeErr(t *testing.T, log *Log) {
 	require.Nil(t, read)
 	apiErr := err.(api.ErrOffsetOutOfRange)
 	require.Equal(t, uint64(1), apiErr.Offset)
+	// fmt.Println(uint64(1), apiErr.Offset)
 }
 
 func testInitExisting(t *testing.T, o *Log) {
@@ -57,8 +64,16 @@ func testInitExisting(t *testing.T, o *Log) {
 		Value: []byte("hello world"),
 	}
 	for i := 0; i < 3; i++ {
+		// fmt.Println("i is:", i)
+		// fmt.Println(o.activeSegment.store.size)
+		// fmt.Println(o.segments[0].store.size)
+		// fmt.Println(o.segments[0].store.buf)
+		// fmt.Println(append)
 		_, err := o.Append(append)
+		// fmt.Println(o.segments[0].store.size)
 		require.NoError(t, err)
+		// fmt.Println(len(o.segments))
+		// fmt.Println(o.activeSegment.store.buf)
 	}
 	require.NoError(t, o.Close())
 	off, err := o.LowestOffset()
@@ -101,8 +116,10 @@ func testTruncate(t *testing.T, log *Log) {
 		_, err := log.Append(append)
 		require.NoError(t, err)
 	}
+	fmt.Println(log.segments)
 	err := log.Truncate(1)
 	require.NoError(t, err)
 	_, err = log.Read(0)
 	require.Error(t, err)
+	fmt.Println(log.segments)
 }

@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"io"
 	"os"
 
@@ -45,6 +46,7 @@ func newIndex(f *os.File, c Config) (*index, error) {
 
 func (i *index) Read(in int64) (out uint32, pos uint64, err error) {
 	if i.size == 0 {
+		fmt.Println("first eof")
 		return 0, 0, io.EOF
 	}
 	if in == -1 {
@@ -54,6 +56,8 @@ func (i *index) Read(in int64) (out uint32, pos uint64, err error) {
 	}
 	pos = uint64(out) * entWidth
 	if i.size < pos+entWidth {
+		fmt.Println(i.size, pos+entWidth)
+		fmt.Println("2nd eof")
 		return 0, 0, io.EOF
 	}
 	out = enc.Uint32(i.mmap[pos : pos+offWidth])
