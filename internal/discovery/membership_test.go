@@ -13,14 +13,20 @@ import (
 
 func TestMembership(t *testing.T) {
 	m, handler := setupMember(t, nil)
+	fmt.Printf("gs member 0: %+v\n", m)
+	fmt.Printf("gs the handler: %+v\n", handler)
 	m, _ = setupMember(t, m)
+	fmt.Printf("gs member 1: %+v\n", m)
 	m, _ = setupMember(t, m)
+	fmt.Printf("gs member 2: %+v\n", m)
 
 	require.Eventually(t, func() bool {
 		return 2 == len(handler.joins) &&
 			3 == len(m[0].Members()) &&
 			0 == len(handler.leaves)
 	}, 3*time.Second, 250*time.Millisecond)
+
+	// Last member leaves the cluster
 	require.NoError(t, m[2].Leave())
 
 	require.Eventually(t, func() bool {

@@ -68,6 +68,8 @@ func TestAgent(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		fmt.Printf("gs \"TestAgent\" Agent %d: %+v\n", i, agent)
+
 		agents = append(agents, agent)
 	}
 

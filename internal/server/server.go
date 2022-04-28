@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -49,6 +50,7 @@ func NewGRPCServer(config *Config, grpcOpts ...grpc.ServerOption) (*grpc.Server,
 			},
 		),
 	}
+	
 	trace.ApplyConfig(trace.Config{DefaultSampler: trace.AlwaysSample()})
 	err := view.Register(ocgrpc.DefaultServerViews...)
 	if err != nil {
@@ -203,13 +205,18 @@ func authenticate(ctx context.Context) (context.Context, error) {
 		return context.WithValue(ctx, subjectContextKey{}, ""), nil
 	}
 	tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
+	fmt.Printf("tlsInfo: %+v\n", tlsInfo)
 	subject := tlsInfo.State.VerifiedChains[0][0].Subject.CommonName
+	fmt.Println("auth func subject:", subject)
+	fmt.Printf("auth ctx before: %+v\n", ctx)
 	ctx = context.WithValue(ctx, subjectContextKey{}, subject)
+	fmt.Printf("auth ctx after: %+v\n", ctx)
 
 	return ctx, nil
 }
 
 func subject(ctx context.Context) string {
+	fmt.Println("subject func val:", ctx.Value(subjectContextKey{}).(string))
 	return ctx.Value(subjectContextKey{}).(string)
 }
 

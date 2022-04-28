@@ -1,6 +1,7 @@
 package discovery
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/hashicorp/raft"
@@ -47,14 +48,16 @@ func (m *Membership) setupSerf() (err error) {
 	m.events = make(chan serf.Event)
 	config.EventCh = m.events
 	config.Tags = m.Tags
-	config.NodeName = m.NodeName
+	config.NodeName = m.Config.NodeName
 	m.serf, err = serf.Create(config)
 	if err != nil {
 		return err
 	}
 	go m.eventHandler()
 	if m.StartJoinAddrs != nil {
-		_, err = m.serf.Join(m.StartJoinAddrs, true)
+		// GS added n since I want to know the # of members at the time
+		n, err := m.serf.Join(m.StartJoinAddrs, true)
+		fmt.Printf("gs \"(m *Membership) setupSerf()\" nodes contacted after Join: %+v\n", n)
 		if err != nil {
 			return err
 		}
@@ -69,6 +72,8 @@ type Handler interface {
 
 func (m *Membership) eventHandler() {
 	for e := range m.events {
+		fmt.Printf("gs whole event: %+v\n", e)
+		fmt.Println("gs func \"(m *Membership) eventHandler()\" eventType:", e.EventType())
 		switch e.EventType() {
 		case serf.EventMemberJoin:
 			for _, member := range e.(serf.MemberEvent).Members {

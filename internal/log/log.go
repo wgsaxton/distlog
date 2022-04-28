@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -62,7 +61,7 @@ func (l *Log) setup() error {
 		i++
 	}
 	if l.segments == nil {
-		fmt.Println(l.Config.Segment)
+		// fmt.Println(l.Config.Segment)
 		if err = l.newSegment(
 			l.Config.Segment.InitialOffset,
 		); err != nil {

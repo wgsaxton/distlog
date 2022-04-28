@@ -2,6 +2,7 @@ package log
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	api "github.com/wgsaxton/distlog/api/v1"
@@ -33,6 +34,8 @@ func (r *Replicator) Join(name, addr string) error {
 		return nil
 	}
 	r.servers[name] = make(chan struct{})
+	fmt.Println("server name:", name)
+	fmt.Printf("server's struct: %+v\n", r.servers[name])
 
 	go r.replicate(addr, r.servers[name])
 
