@@ -185,6 +185,9 @@ func (l *DistributedLog) Join(id, addr string) error {
 	}
 	serverID := raft.ServerID(id)
 	serverAddr := raft.ServerAddress(addr)
+	fmt.Println("In (l *DistributedLog) Join(id, addr string)")
+	fmt.Printf("ServerID: %+v\n", serverID)
+	fmt.Printf("ServerAddress: %+v\n", serverAddr)
 	for _, srv := range configFuture.Configuration().Servers {
 		if srv.ID == serverID || srv.Address == serverAddr {
 			if srv.ID == serverID && srv.Address == serverAddr {
@@ -207,6 +210,8 @@ func (l *DistributedLog) Join(id, addr string) error {
 
 func (l *DistributedLog) Leave(id string) error {
 	removeFuture := l.raft.RemoveServer(raft.ServerID(id), 0, 0)
+	fmt.Println("In (l *DistributedLog) Leave(id string)")
+	fmt.Printf("ServerID: %+v\n", raft.ServerID(id))
 	return removeFuture.Error()
 }
 
@@ -218,7 +223,10 @@ func (l *DistributedLog) WaitForLeader(timeout time.Duration) error {
 		select {
 		case <-timeoutc:
 			return fmt.Errorf("timed out")
-		case <-ticker.C:
+		case msg := <-ticker.C:
+			fmt.Println("inside func (l *DistributedLog).WaitForLeader(timeout time.Duration)")
+			fmt.Printf("from channel: %+v\n", msg)
+			fmt.Printf("Leader: %+v\n", l.raft.Leader())
 			if l := l.raft.Leader(); l != "" {
 				return nil
 			}

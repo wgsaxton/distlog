@@ -36,9 +36,9 @@ func TestMultipleNodes(t *testing.T) {
 		config := log.Config{}
 		config.Raft.StreamLayer = log.NewStreamLayer(ln, nil, nil)
 		config.Raft.LocalID = raft.ServerID(fmt.Sprintf("%d", i))
-		config.Raft.HeartbeatTimeout = 50 * time.Millisecond
-		config.Raft.ElectionTimeout = 50 * time.Millisecond
-		config.Raft.LeaderLeaseTimeout = 50 * time.Millisecond
+		config.Raft.HeartbeatTimeout = 200 * time.Millisecond
+		config.Raft.ElectionTimeout = 200 * time.Millisecond
+		config.Raft.LeaderLeaseTimeout = 200 * time.Millisecond
 		config.Raft.CommitTimeout = 5 * time.Millisecond
 		config.Raft.BindAddr = ln.Addr().String()
 
@@ -50,14 +50,22 @@ func TestMultipleNodes(t *testing.T) {
 		require.NoError(t, err)
 
 		if i != 0 {
+			fmt.Printf("logs[0] Leader: %+v\n", logs[0])
 			err = logs[0].Join(
 				fmt.Sprintf("%d", i), ln.Addr().String(),
 			)
+			fmt.Println("i val for logs[]:", i)
+			fmt.Printf("logs Join Error: %+v\n", err)
+			fmt.Printf("logs[%d] item Addr: %+v\n", i, ln.Addr())
+
 			require.NoError(t, err)
 		} else {
+			fmt.Println("l.WaitForLeader(3 * time.Second) Starting")
 			err = l.WaitForLeader(3 * time.Second)
+			fmt.Println("l.WaitForLeader(3 * time.Second) Done")
 			require.NoError(t, err)
 		}
+		fmt.Printf("Dist Log %d: %+v\n", i, l)
 		logs = append(logs, l)
 	}
 
