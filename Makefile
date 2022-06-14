@@ -56,3 +56,16 @@ build-docker:
 	docker build -t github.com/wgsaxton/distlog:$(TAG) .
 
 # END: build_docker
+
+build-path:
+	rm -rf .build
+	mkdir -p .build
+
+
+build-local: build-path
+	CGO_ENABLED=0 GOOS=linux go build -o .build/proglog ./cmd/proglog
+
+
+copy-build:
+	cp .build/proglog /Users/garrett.saxton/NetEng_loc/k8slearn/k8s_install_and_fundamentals_pluralsight/VM_Lab/podman_K8s/proglog/proglog
+

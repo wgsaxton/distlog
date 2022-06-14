@@ -1,6 +1,7 @@
 package loadbalance_test
 
 import (
+	"fmt"
 	"net"
 	"testing"
 
@@ -60,6 +61,9 @@ func TestResolver(t *testing.T) {
 	)
 	require.NoError(t, err)
 
+	fmt.Printf("conn: %+v\n", conn)
+	fmt.Printf("resolver clientconn: %+v\n", *r.GetClientConn())
+
 	wantState := resolver.State{
 		Addresses: []resolver.Address{{
 			Addr:       "localhost:9001",
@@ -79,6 +83,7 @@ func TestResolver(t *testing.T) {
 type getServers struct{}
 
 func (s *getServers) GetServers() ([]*api.Server, error) {
+	fmt.Println("GetServers for resolver test is being called now.")
 	return []*api.Server{{
 		Id:       "leader",
 		RpcAddr:  "localhost:9001",

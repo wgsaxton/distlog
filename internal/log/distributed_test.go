@@ -93,6 +93,7 @@ func TestMultipleNodes(t *testing.T) {
 	}
 
 	servers, err := logs[0].GetServers()
+	fmt.Printf("Servers from GetServers 1st: %+v\n", servers)
 	require.NoError(t, err)
 	require.Equal(t, 3, len(servers))
 	require.True(t, servers[0].IsLeader)
@@ -105,6 +106,7 @@ func TestMultipleNodes(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 
 	servers, err = logs[0].GetServers()
+	fmt.Printf("Servers from GetServers 2nd: %+v\n", servers)
 	require.NoError(t, err)
 	require.Equal(t, 2, len(servers))
 	require.True(t, servers[0].IsLeader)

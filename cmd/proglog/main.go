@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -18,13 +19,16 @@ func main() {
 
 	cmd := &cobra.Command{
 		Use:     "proglog",
+		// Use: "proglog [--config-file file]" ???
 		PreRunE: cli.setupConfig,
 		RunE:    cli.run,
 	}
 	if err := setupFlags(cmd); err != nil {
+		fmt.Println("setupFlags(cmd) returned error")
 		log.Fatal(err)
 	}
 	if err := cmd.Execute(); err != nil {
+		fmt.Println("Error returned for main()-cmd.Execute()")
 		log.Fatal(err)
 	}
 }
@@ -44,6 +48,7 @@ func setupFlags(cmd *cobra.Command) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Hostname found in setupFlags:", hostname)
 
 	cmd.Flags().String("config-file", "", "Path to config file.")
 	dataDir := path.Join(os.TempDir(), "proglog")
@@ -73,6 +78,7 @@ func setupFlags(cmd *cobra.Command) error {
 	cmd.Flags().String("peer-tls-ca-file",
 		"",
 		"Path to peer cerificate authority.")
+	fmt.Println("GSnote - Done with setupFlags()")
 	return viper.BindPFlags(cmd.Flags())
 }
 
@@ -84,10 +90,13 @@ func (c *cli) setupConfig(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	viper.SetConfigFile(configFile)
+	fmt.Println("Config file set to:", viper.ConfigFileUsed())
 
+	fmt.Println("Viper start reading config file.")
 	if err = viper.ReadInConfig(); err != nil {
 		// it's ok if config file doesn't exist
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			fmt.Println("file found but an error")
 			return err
 		}
 	}
@@ -127,6 +136,9 @@ func (c *cli) setupConfig(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	fmt.Printf("The struct with values: %+v\n", c)
+	fmt.Println("Done with PreRunE: cli.setupConfig. No errors returned.")
+
 	return nil
 }
 
@@ -137,8 +149,10 @@ func (c *cli) run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Println("Agent started")
 	sigc := make(chan os.Signal, 1)
 	signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
 	<-sigc
+	fmt.Println("Got shutdown signal")
 	return agent.Shutdown()
 }

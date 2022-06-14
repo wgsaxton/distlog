@@ -24,15 +24,20 @@ spec:
           - |-
             ID=$(echo $HOSTNAME | rev | cut -d- -f1 | rev)
             cat > /var/run/proglog/config.yaml <<EOD
-            data-dir: /var/run/proglog/data
+            data-dir: \/var\/run\/proglog\/data
             rpc-port: {{.Values.rpcPort}}
             # Make sure the following three key-values are on one line each in
             # you code. I split them across multiple lines to fit them in
             # the book.
-            bind-addr: "$HOSTNAME.proglog.{{.Release.Namespace}}.\svc.cluster.local:{{.Values.serfPort}}"
+            bind-addr: "$HOSTNAME.proglog.{{.Release.Namespace}}.svc.cluster.local:{{.Values.serfPort}}"
             bootstrap: $([ $ID = 0 ] && echo true || echo false)
-            $([ $ID !=0 ] && echo 'start-join-addrs: "proglog-0.proglog.{{.Release.Namespace}}.svc.cluster.local:{{.Values.serfPort}}"')
+            $([ $ID != 0 ] && echo 'start-join-addrs: "proglog-0.proglog.{{.Release.Namespace}}.svc.cluster.local:{{.Values.serfPort}}"')
             EOD
+            cat > /var/run/proglog/healthcheck.sh <<EOD
+            #!/bin/sh
+            /bin/grpc_health_probe -addr=proglog-$ID.proglog.default.svc.cluster.local:{{ .Values.rpcPort }}
+            EOD
+            chmod +x /var/run/proglog/healthcheck.sh
         volumeMounts:
         - name: datadir
           mountPath: /var/run/proglog
@@ -42,17 +47,26 @@ spec:
         ports:
         - containerPort: {{ .Values.rpcPort }}
           name: rpc
+          # hostIP: 127.0.0.1
+          # hostPort: {{ .Values.rpcPort }}
         - containerPort: {{ .Values.serfPort }}
           name: serf
         args:
+          #- --bootstrap=true
           - --config-file=/var/run/proglog/config.yaml
+        # readinessProbe:
+        #   tcpSocket:
+        #     port: {{ .Values.rpcPort }}
+        # livenessProbe:
+        #   tcpSocket:
+        #     port: {{ .Values.rpcPort }}
         readinessProbe:
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:{{ .Values.rpcPort }}"]
+            command: ["/var/run/proglog/healthcheck.sh"]
           initialDelaySeconds: 10
         livenessProbe:
           exec:
-            command: ["/bin/grpc_health_probe", "-addr=:{{ .Values.rpcPort }}"]
+            command: ["/var/run/proglog/healthcheck.sh"]
           initialDelaySeconds: 10
         volumeMounts:
         - name: datadir
@@ -61,6 +75,7 @@ spec:
   - metadata:
       name: datadir
     spec:
+      storageClassName: "local-storage"
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:

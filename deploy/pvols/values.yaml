@@ -1,0 +1,10 @@
+# Values to create PVs
+volumes:
+# - name: c1-cp1
+#   path: /vagrant/node_storage/c1-cp1
+- name: c1-node1
+  path: /vagrant/node_storage/c1-node1
+- name: c1-node2
+  path: /vagrant/node_storage/c1-node2
+- name: c1-node3
+  path: /vagrant/node_storage/c1-node3

@@ -1,6 +1,7 @@
 package loadbalance_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -34,6 +35,7 @@ func TestPickerProducesToLeader(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		gotPick, err := picker.Pick(info)
 		require.NoError(t, err)
+		fmt.Printf("gotPick: %+v\n", gotPick)
 		require.Equal(t, subConns[0], gotPick.SubConn)
 	}
 }
@@ -46,6 +48,8 @@ func TestPickerConsumesFromFollowers(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		pick, err := picker.Pick(info)
 		require.NoError(t, err)
+		fmt.Printf("pick: %+v\n", pick)
+		fmt.Println("subConns index:", i%2+1)
 		require.Equal(t, subConns[i%2+1], pick.SubConn)
 	}
 }
@@ -67,6 +71,9 @@ func setupTest() (*loadbalance.Picker, []*subConn) {
 	}
 	picker := &loadbalance.Picker{}
 	picker.Build(buildInfo)
+	fmt.Println("In setupTest")
+	fmt.Printf("picker: %+v\n", picker)
+	fmt.Printf("subConns: %+v\n", subConns)
 	return picker, subConns
 }
 
