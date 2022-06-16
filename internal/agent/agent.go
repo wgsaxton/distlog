@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/raft"
 	"github.com/soheilhy/cmux"
 	"github.com/wgsaxton/distlog/internal/auth"
+	"github.com/wgsaxton/distlog/internal/common"
 	"github.com/wgsaxton/distlog/internal/discovery"
 	"github.com/wgsaxton/distlog/internal/log"
 	"github.com/wgsaxton/distlog/internal/server"
@@ -59,6 +60,7 @@ func New(config Config) (*Agent, error) {
 		Config:    config,
 		shutdowns: make(chan struct{}),
 	}
+	fmt.Println("agent.go New() dir:", a.Config.DataDir)
 	setup := []func() error{
 		a.setupLogger,
 		a.setupMux,
@@ -76,6 +78,7 @@ func New(config Config) (*Agent, error) {
 }
 
 func (a *Agent) setupMux() error {
+	fmt.Println("Running a.setupMux()")
 	addr, err := net.ResolveTCPAddr("tcp", a.Config.BindAddr)
 	if err != nil {
 		return err
@@ -94,6 +97,7 @@ func (a *Agent) setupMux() error {
 }
 
 func (a *Agent) setupLogger() error {
+	fmt.Println("Running a.setupLogger()")
 	logger, err := zap.NewDevelopment()
 	if err != nil {
 		return err
@@ -103,6 +107,7 @@ func (a *Agent) setupLogger() error {
 }
 
 func (a *Agent) setupLog() error {
+	fmt.Println("Running a.setupLog()")
 	raftLn := a.mux.Match(func(reader io.Reader) bool {
 		b := make([]byte, 1)
 		if _, err := reader.Read(b); err != nil {
@@ -123,12 +128,14 @@ func (a *Agent) setupLog() error {
 	logConfig.Raft.BindAddr = rpcAddr
 	logConfig.Raft.LocalID = raft.ServerID(a.Config.NodeName)
 	logConfig.Raft.Bootstrap = a.Config.Bootstrap
-	
+
+	fmt.Println("agent.go about to run a.log, err = log.NewDistributedLog()")
 	a.log, err = log.NewDistributedLog(
 		a.Config.DataDir,
 		logConfig,
 	)
 	if err != nil {
+		common.Gslog.Println("agent.go error from: a.log, err = log.NewDistributedLog():", err)
 		return err
 	}
 	if a.Config.Bootstrap {
@@ -138,13 +145,14 @@ func (a *Agent) setupLog() error {
 }
 
 func (a *Agent) setupServer() error {
+	fmt.Println("Running a.setupServer()")
 	authorizer := auth.New(
 		a.Config.ACLModelFile,
 		a.Config.ACLPolicyFile,
 	)
 	serverConfig := &server.Config{
-		CommitLog:  a.log,
-		Authorizer: authorizer,
+		CommitLog:   a.log,
+		Authorizer:  authorizer,
 		GetServerer: a.log,
 	}
 	var opts []grpc.ServerOption
@@ -167,6 +175,7 @@ func (a *Agent) setupServer() error {
 }
 
 func (a *Agent) setupMembership() error {
+	fmt.Println("Running a.setupMembership()")
 	rpcAddr, err := a.Config.RPCAddr()
 	if err != nil {
 		return err

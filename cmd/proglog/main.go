@@ -11,14 +11,17 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/wgsaxton/distlog/internal/agent"
+	"github.com/wgsaxton/distlog/internal/common"
 	"github.com/wgsaxton/distlog/internal/config"
 )
+
+const ver string = "0.0.22"
 
 func main() {
 	cli := &cli{}
 
 	cmd := &cobra.Command{
-		Use:     "proglog",
+		Use: "proglog",
 		// Use: "proglog [--config-file file]" ???
 		PreRunE: cli.setupConfig,
 		RunE:    cli.run,
@@ -28,7 +31,7 @@ func main() {
 		log.Fatal(err)
 	}
 	if err := cmd.Execute(); err != nil {
-		fmt.Println("Error returned for main()-cmd.Execute()")
+		common.Gslog.Println("Error returned for main()-cmd.Execute() err:", err)
 		log.Fatal(err)
 	}
 }
@@ -48,6 +51,8 @@ func setupFlags(cmd *cobra.Command) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Println("Version is", ver)
+	common.Gslog.Println("Testing gs log. Version is:", ver)
 	fmt.Println("Hostname found in setupFlags:", hostname)
 
 	cmd.Flags().String("config-file", "", "Path to config file.")
@@ -78,6 +83,7 @@ func setupFlags(cmd *cobra.Command) error {
 	cmd.Flags().String("peer-tls-ca-file",
 		"",
 		"Path to peer cerificate authority.")
+	cmd.Flags().Bool("version", false, "Version of Proglog")
 	fmt.Println("GSnote - Done with setupFlags()")
 	return viper.BindPFlags(cmd.Flags())
 }
@@ -101,6 +107,7 @@ func (c *cli) setupConfig(cmd *cobra.Command, args []string) error {
 		}
 	}
 	c.cfg.DataDir = viper.GetString("data-dir")
+	common.Gslog.Println("c.cfg.DataDir value:", c.cfg.DataDir)
 	c.cfg.NodeName = viper.GetString("node-name")
 	c.cfg.BindAddr = viper.GetString("bind-addr")
 	c.cfg.RPCPort = viper.GetInt("rpc-port")
@@ -114,6 +121,8 @@ func (c *cli) setupConfig(cmd *cobra.Command, args []string) error {
 	c.cfg.PeerTLSConfig.CertFile = viper.GetString("peer-tls-cert-file")
 	c.cfg.PeerTLSConfig.KeyFile = viper.GetString("peer-tls-key-file")
 	c.cfg.PeerTLSConfig.CAFile = viper.GetString("peer-tls-ca-file")
+
+	fmt.Printf("1st - The struct with values: %+v\n", c)
 
 	if c.cfg.ServerTLSConfig.CertFile != "" &&
 		c.cfg.ServerTLSConfig.KeyFile != "" {
@@ -136,17 +145,25 @@ func (c *cli) setupConfig(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	fmt.Printf("The struct with values: %+v\n", c)
+	fmt.Printf("2nd - The struct with values: %+v\n", c)
 	fmt.Println("Done with PreRunE: cli.setupConfig. No errors returned.")
 
+	if viper.GetBool("version") {
+		fmt.Println("Version is", ver)
+		syscall.Exit(0)
+	}
 	return nil
 }
 
 func (c *cli) run(cmd *cobra.Command, args []string) error {
 	var err error
 
+	fmt.Println("proglog/main.go cli.run() starting")
+	fmt.Printf("3rd - The struct with values: %+v\n", c)
+
 	agent, err := agent.New(c.cfg.Config)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	fmt.Println("Agent started")

@@ -5,7 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/tysontate/gommap"
+	"github.com/tysonmote/gommap"
+	"github.com/wgsaxton/distlog/internal/common"
 )
 
 var (
@@ -26,21 +27,31 @@ func newIndex(f *os.File, c Config) (*index, error) {
 	}
 	fi, err := os.Stat(f.Name())
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
+	fmt.Printf("index.go.newIndex() f.Name() value: %+v\n", f.Name())
+	fmt.Println("index.go.newIndex() c.Segment.MaxIndexBytes", c.Segment.MaxIndexBytes)
 	idx.size = uint64(fi.Size())
 	if err = os.Truncate(
 		f.Name(), int64(c.Segment.MaxIndexBytes),
 	); err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
+	fmt.Printf("index.go.newIndex() idx struct: %+v\n", idx)
+	fmt.Println("idx.file.Fd():", idx.file.Fd(), "and name", idx.file.Name())
 	if idx.mmap, err = gommap.Map(
 		idx.file.Fd(),
 		gommap.PROT_READ|gommap.PROT_WRITE,
-		gommap.MAP_SHARED,
+		gommap.MAP_PRIVATE,
 	); err != nil {
+		fmt.Printf("In Error, index.go.newIndex() idx struct: %+v\n", idx)
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
+	fmt.Printf("index.go.newIndex() No errors idx struct: %+v\n", idx)
+	fmt.Println("log.go.newIndex() returned with no error")
 	return idx, nil
 }
 

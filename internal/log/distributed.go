@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/raft"
 	raftboltdb "github.com/hashicorp/raft-boltdb/v2"
 	api "github.com/wgsaxton/distlog/api/v1"
+	"github.com/wgsaxton/distlog/internal/common"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -30,11 +31,14 @@ func NewDistributedLog(dataDir string, config Config) (
 		config: config,
 	}
 	if err := l.setupLog(dataDir); err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	if err := l.setupRaft(dataDir); err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
+	fmt.Printf("log after new log creation: %+v\n", l.raft.Leader())
 	return l, nil
 }
 
@@ -44,7 +48,10 @@ func (l *DistributedLog) setupLog(dataDir string) error {
 		return err
 	}
 	var err error
+	fmt.Println("Before distributed.go.l.setupLog.NewLog() logDir:", logDir)
 	l.log, err = NewLog(logDir, l.config)
+	common.Gslog.Println("Error given here. err:", err)
+	fmt.Println("Also printing l.log:", l.log)
 	return err
 }
 
@@ -52,13 +59,17 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 	fsm := &fsm{log: l.log}
 
 	logDir := filepath.Join(dataDir, "raft", "log")
+	fmt.Println("Before distributed.go.l.setupRaft makeDir dataDir:", dataDir)
 	if err := os.MkdirAll(logDir, 0755); err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
+	fmt.Println("After distributed.go.l.setupRaft makeDir dataDir:", dataDir)
 	logConfig := l.config
 	logConfig.Segment.InitialOffset = 1
 	logStore, err := newLogStore(logDir, logConfig)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 
@@ -66,7 +77,8 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 		filepath.Join(dataDir, "raft", "stable"),
 	)
 	if err != nil {
-		return nil
+		common.Gslog.Println("Error given here. err:", err)
+		return err
 	}
 
 	retain := 1
@@ -76,6 +88,7 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 		os.Stderr,
 	)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 
@@ -111,7 +124,9 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 		snapshotStore,
 		transport,
 	)
+	fmt.Println("after new Raft:", l.raft.Leader())
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	hasState, err := raft.HasExistingState(
@@ -119,7 +134,9 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 		stableStore,
 		snapshotStore,
 	)
+	fmt.Println("Raft hasState:", hasState)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	if l.config.Raft.Bootstrap && !hasState {
@@ -131,6 +148,8 @@ func (l *DistributedLog) setupRaft(dataDir string) error {
 		}
 		err = l.raft.BootstrapCluster(config).Error()
 	}
+
+	fmt.Println("After distributed.go.l.setupRaft done err:", err)
 	return err
 }
 
@@ -140,6 +159,7 @@ func (l *DistributedLog) Append(record *api.Record) (uint64, error) {
 		&api.ProduceRequest{Record: record},
 	)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return 0, err
 	}
 	return res.(*api.ProduceResponse).Offset, nil
@@ -152,14 +172,17 @@ func (l *DistributedLog) apply(reqType RequestType, req proto.Message) (
 	var buf bytes.Buffer
 	_, err := buf.Write([]byte{byte(reqType)})
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	b, err := proto.Marshal(req)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	_, err = buf.Write(b)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	timeout := 10 * time.Second
@@ -181,6 +204,7 @@ func (l *DistributedLog) Read(offset uint64) (*api.Record, error) {
 func (l *DistributedLog) Join(id, addr string) error {
 	configFuture := l.raft.GetConfiguration()
 	if err := configFuture.Error(); err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	serverID := raft.ServerID(id)
@@ -197,12 +221,14 @@ func (l *DistributedLog) Join(id, addr string) error {
 			// remove the existing server
 			removeFuture := l.raft.RemoveServer(serverID, 0, 0)
 			if err := removeFuture.Error(); err != nil {
+				common.Gslog.Println("Error given here. err:", err)
 				return err
 			}
 		}
 	}
 	addFuture := l.raft.AddVoter(serverID, serverAddr, 0, 0)
 	if err := addFuture.Error(); err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	return nil
@@ -216,6 +242,7 @@ func (l *DistributedLog) Leave(id string) error {
 }
 
 func (l *DistributedLog) WaitForLeader(timeout time.Duration) error {
+	fmt.Printf("Leader: %+v\n", l.raft.Leader())
 	timeoutc := time.After(timeout)
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -237,6 +264,7 @@ func (l *DistributedLog) WaitForLeader(timeout time.Duration) error {
 func (l *DistributedLog) Close() error {
 	f := l.raft.Shutdown()
 	if err := f.Error(); err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	return l.log.Close()
@@ -245,13 +273,14 @@ func (l *DistributedLog) Close() error {
 func (l *DistributedLog) GetServers() ([]*api.Server, error) {
 	future := l.raft.GetConfiguration()
 	if err := future.Error(); err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	var servers []*api.Server
 	for _, server := range future.Configuration().Servers {
 		servers = append(servers, &api.Server{
-			Id: string(server.ID),
-			RpcAddr: string(server.Address),
+			Id:       string(server.ID),
+			RpcAddr:  string(server.Address),
 			IsLeader: l.raft.Leader() == server.Address,
 		})
 	}
@@ -284,10 +313,12 @@ func (l *fsm) applyAppend(b []byte) interface{} {
 	var req api.ProduceRequest
 	err := proto.Unmarshal(b, &req)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	offset, err := l.log.Append(req.Record)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	return &api.ProduceResponse{Offset: offset}
@@ -307,6 +338,7 @@ type snapshot struct {
 func (s *snapshot) Persist(sink raft.SnapshotSink) error {
 	if _, err := io.Copy(sink, s.reader); err != nil {
 		_ = sink.Cancel()
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	return sink.Close()
@@ -322,23 +354,28 @@ func (f *fsm) Restore(r io.ReadCloser) error {
 		if err == io.EOF {
 			break
 		} else if err != nil {
+			common.Gslog.Println("Error given here. err:", err)
 			return err
 		}
 		size := int64(enc.Uint64(b))
 		if _, err = io.CopyN(&buf, r, size); err != nil {
+			common.Gslog.Println("Error given here. err:", err)
 			return err
 		}
 		record := &api.Record{}
 		if err = proto.Unmarshal(buf.Bytes(), record); err != nil {
+			common.Gslog.Println("Error given here. err:", err)
 			return err
 		}
 		if i == 0 {
 			f.log.Config.Segment.InitialOffset = record.Offset
 			if err := f.log.Reset(); err != nil {
+				common.Gslog.Println("Error given here. err:", err)
 				return err
 			}
 		}
 		if _, err = f.log.Append(record); err != nil {
+			common.Gslog.Println("Error given here. err:", err)
 			return err
 		}
 		buf.Reset()
@@ -355,6 +392,7 @@ type logStore struct {
 func newLogStore(dir string, c Config) (*logStore, error) {
 	log, err := NewLog(dir, c)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	return &logStore{log}, nil
@@ -372,6 +410,7 @@ func (l *logStore) LastIndex() (uint64, error) {
 func (l *logStore) GetLog(index uint64, out *raft.Log) error {
 	in, err := l.Read(index)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return err
 	}
 	out.Data = in.Value
@@ -392,6 +431,7 @@ func (l *logStore) StoreLogs(records []*raft.Log) error {
 			Term:  record.Term,
 			Type:  uint32(record.Type),
 		}); err != nil {
+			common.Gslog.Println("Error given here. err:", err)
 			return err
 		}
 	}
@@ -431,11 +471,13 @@ func (s *StreamLayer) Dial(
 	dialer := &net.Dialer{Timeout: timeout}
 	var conn, err = dialer.Dial("tcp", string(addr))
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	// identify to mux this is a raft rpc
 	_, err = conn.Write([]byte{byte(RaftRPC)})
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	if s.peerTLSCongig != nil {
@@ -447,11 +489,13 @@ func (s *StreamLayer) Dial(
 func (s *StreamLayer) Accept() (net.Conn, error) {
 	conn, err := s.ln.Accept()
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	b := make([]byte, 1)
 	_, err = conn.Read(b)
 	if err != nil {
+		common.Gslog.Println("Error given here. err:", err)
 		return nil, err
 	}
 	if bytes.Compare([]byte{byte(RaftRPC)}, b) != 0 {

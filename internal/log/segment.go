@@ -28,9 +28,11 @@ func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 		0644,
 	)
 	if err != nil {
+		fmt.Println("segemnt.go.newSegment() Error after creating .store file error:", err)
 		return nil, err
 	}
 	if s.store, err = newStore(storeFile); err != nil {
+		fmt.Println("segemnt.go.newSegment() Error after newStore() error:", err)
 		return nil, err
 	}
 	indexFile, err := os.OpenFile(
@@ -39,9 +41,12 @@ func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 		0644,
 	)
 	if err != nil {
+		fmt.Println("segemnt.go.newSegment() Error after creating .index file error:", err)
 		return nil, err
 	}
+	fmt.Println("segment.go.indexFile: ", indexFile.Name())
 	if s.index, err = newIndex(indexFile, c); err != nil {
+		fmt.Println("segemnt.go.newSegment() Error after creating newIndex error:", err)
 		return nil, err
 	}
 	if off, _, err := s.index.Read(-1); err != nil {
@@ -49,6 +54,7 @@ func newSegment(dir string, baseOffset uint64, c Config) (*segment, error) {
 	} else {
 		s.nextOffset = baseOffset + uint64(off) + 1
 	}
+	fmt.Println("segemnt.go.newSegment() finished with no error")
 	return s, nil
 }
 

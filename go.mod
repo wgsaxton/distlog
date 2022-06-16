@@ -14,7 +14,8 @@ require (
 	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/travisjeffery/go-dynaport v1.0.0
-	github.com/tysontate/gommap v0.0.0-20210506040252-ef38c88b18e1
+	// tysontate is in the book. He changed his last name.
+	github.com/tysonmote/gommap v0.0.2
 	go.opencensus.io v0.23.0
 	go.uber.org/zap v1.19.1
 	google.golang.org/genproto v0.0.0-20211118181313-81c1377c94b1
@@ -42,7 +43,6 @@ require (
 	github.com/hashicorp/memberlist v0.2.2 // indirect
 	github.com/hashicorp/raft-boltdb v0.0.0-20210422161416-485fa74b0b01 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/miekg/dns v1.1.26 // indirect
@@ -64,9 +64,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210427180440-81ed05c6b58c // indirect
 	golang.org/x/sys v0.0.0-20210511113859-b0526f3d8744 // indirect
 	golang.org/x/text v0.3.6 // indirect
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
-	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )

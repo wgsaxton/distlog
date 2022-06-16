@@ -1,6 +1,7 @@
 package log
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -36,8 +37,11 @@ func NewLog(dir string, c Config) (*Log, error) {
 }
 
 func (l *Log) setup() error {
+	fmt.Println("log.go.l.setup() l.Dir:", l.Dir)
 	files, err := ioutil.ReadDir(l.Dir)
+	fmt.Printf("log.go.l.setup() files var: %+v\n", files)
 	if err != nil {
+		fmt.Println("log.go.l.setup() error after ReadDir:", err)
 		return err
 	}
 	var baseOffsets []uint64
@@ -53,7 +57,10 @@ func (l *Log) setup() error {
 		return baseOffsets[i] < baseOffsets[j]
 	})
 	for i := 0; i < len(baseOffsets); i++ {
+		fmt.Println("log.go.l.setup() baseOffsets[i] val:", baseOffsets[i])
 		if err = l.newSegment(baseOffsets[i]); err != nil {
+			// error here for now
+			fmt.Println("log.go.l.setup() error after l.newSegment(baseOffsets):", err)
 			return err
 		}
 		// baseOffset contains dup for index and store so we skip
@@ -61,10 +68,11 @@ func (l *Log) setup() error {
 		i++
 	}
 	if l.segments == nil {
-		// fmt.Println(l.Config.Segment)
+		fmt.Printf("log.go.l.setup() l.Config.Segment: %+v\n", l.Config.Segment)
 		if err = l.newSegment(
 			l.Config.Segment.InitialOffset,
 		); err != nil {
+			fmt.Println("log.go.l.setup() error after l.newSegment(initialOffset):", err)
 			return err
 		}
 	}
@@ -182,6 +190,8 @@ func (o *originReader) Read(p []byte) (int, error) {
 func (l *Log) newSegment(off uint64) error {
 	s, err := newSegment(l.Dir, off, l.Config)
 	if err != nil {
+		fmt.Println("log.go.(Log).newSegment error:", err)
+		fmt.Println("l.Dir value during error:", l.Dir)
 		return err
 	}
 	l.segments = append(l.segments, s)

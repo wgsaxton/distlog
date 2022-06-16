@@ -3,8 +3,15 @@ volumes:
 # - name: c1-cp1
 #   path: /vagrant/node_storage/c1-cp1
 - name: c1-node1
-  path: /vagrant/node_storage/c1-node1
+  # path: /vagrant/node_storage/c1-node1
+  path: /k8s/proglog
 - name: c1-node2
-  path: /vagrant/node_storage/c1-node2
+  # path: /vagrant/node_storage/c1-node2
+  path: /k8s/proglog
 - name: c1-node3
-  path: /vagrant/node_storage/c1-node3
+  # path: /vagrant/node_storage/c1-node3
+  path: /k8s/proglog
+# Vagrant shared/synced drives don't work with github.com/hashicorp/raft-boltdb/v2
+# https://github.com/influxdata/influxdb/issues/4425#issuecomment-147803779
+# https://github.com/vegasbrianc/docker-monitoring/issues/9#issuecomment-256875655
+storage: 1Gi
